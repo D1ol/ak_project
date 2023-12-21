@@ -4,7 +4,8 @@ namespace App\Tests\Unit\Core\Invoice\Application\Command\CreateInvoice;
 
 use App\Core\Invoice\Application\Command\CreateInvoice\CreateInvoiceCommand;
 use App\Core\Invoice\Application\Command\CreateInvoice\CreateInvoiceHandler;
-use App\Core\Invoice\Domain\Exception\InvoiceException;
+use App\Core\Invoice\Domain\Exception\InvalidAmountException;
+use App\Core\Invoice\Domain\Exception\UserNotActiveException;
 use App\Core\Invoice\Domain\Invoice;
 use App\Core\Invoice\Domain\Repository\InvoiceRepositoryInterface;
 use App\Core\User\Domain\Exception\UserNotFoundException;
@@ -47,12 +48,34 @@ class CreateInvoiceHandlerTest extends TestCase
             ->method('getByEmail')
             ->willReturn($user);
 
+        $user->expects(self::once())
+            ->method('isNotActive')
+            ->willReturn(false);
+
         $this->invoiceRepository->expects(self::once())
             ->method('save')
             ->with($invoice);
 
         $this->invoiceRepository->expects(self::once())
             ->method('flush');
+
+        $this->handler->__invoke((new CreateInvoiceCommand('test@test.pl', 12500)));
+    }
+
+    public function test_handle_user_not_active(): void
+    {
+        $this->expectException(UserNotActiveException::class);
+
+        $user = $this->createMock(User::class);
+
+        $this->userRepository->expects(self::once())
+            ->method('getByEmail')
+            ->willReturn($user);
+
+        $user->expects(self::once())
+            ->method('isNotActive')
+            ->willReturn(true);
+
 
         $this->handler->__invoke((new CreateInvoiceCommand('test@test.pl', 12500)));
     }
@@ -70,8 +93,10 @@ class CreateInvoiceHandlerTest extends TestCase
 
     public function test_handle_invoice_invalid_amount(): void
     {
-        $this->expectException(InvoiceException::class);
+        $this->expectException(InvalidAmountException::class);
 
         $this->handler->__invoke((new CreateInvoiceCommand('test@test.pl', -5)));
     }
+
+
 }

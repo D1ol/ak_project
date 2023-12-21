@@ -5,7 +5,8 @@ namespace App\Core\Invoice\Domain;
 use App\Common\EventManager\EventsCollectorTrait;
 use App\Core\Invoice\Domain\Event\InvoiceCanceledEvent;
 use App\Core\Invoice\Domain\Event\InvoiceCreatedEvent;
-use App\Core\Invoice\Domain\Exception\InvoiceException;
+use App\Core\Invoice\Domain\Exception\InvalidAmountException;
+use App\Core\Invoice\Domain\Exception\UserNotActiveException;
 use App\Core\Invoice\Domain\Status\InvoiceStatus;
 use App\Core\User\Domain\User;
 use Doctrine\ORM\Mapping as ORM;
@@ -47,8 +48,13 @@ class Invoice
      */
     public function __construct(User $user, int $amount)
     {
+
+        if($user->isNotActive()){
+            throw new UserNotActiveException();
+        }
+
         if ($amount <= 0) {
-            throw new InvoiceException('Kwota faktury musi być większa od 0');
+            throw new InvalidAmountException('Kwota faktury musi być większa od 0');
         }
 
         $this->id = null;

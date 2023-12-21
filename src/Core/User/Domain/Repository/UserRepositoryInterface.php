@@ -11,4 +11,15 @@ interface UserRepositoryInterface
      * @throws UserNotFoundException
      */
     public function getByEmail(string $email): User;
+
+    public function findOneByEmail(string $email): ?User;
+
+    public function save(User $user): void;
+
+    public function flush(): void;
+
+    /**
+     * @return User[]
+     */
+    public function getUsersByActiveStatus(bool $active): array;
 }
