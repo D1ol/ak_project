@@ -1,0 +1,49 @@
+version: "3.5"
+# https://docs.docker.com/compose/compose-file/compose-versioning/
+
+services:
+  ak_invoice_php:
+    platform: linux/x86_64
+    container_name: ak_invoice_php
+    restart: always
+    build:
+      context: .
+      dockerfile: docker/build/php/Dockerfile
+    ports:
+      - "8011:80"
+    depends_on:
+      - ak_invoice_mysql
+    volumes:
+      - .:/var/www/html
+      - ./docker/build/php/conf.d/timezone.ini:/usr/local/etc/php/conf.d/timezone.ini
+      - ./docker/build/php/conf.d/docker-php-memlimit.ini:/usr/local/etc/php/conf.d/docker-php-memlimit.ini
+    networks:
+      - ak_invoice
+
+  ak_invoice_mysql:
+    container_name: ak_invoice_mysql
+    platform: linux/x86_64
+    image: mysql:5.7
+#    image: beercan1989/arm-mysql:5.7
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --sql_mode="ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+    restart: always  # always | unless-stopped | on-failure | no
+    expose:
+      - "3306"
+    ports:
+      - "33075:3306"
+    volumes:
+      - ./docker/build/mysql:/docker-entrypoint-initdb.d
+      - ${MYSQL_DOCKER_CNF-./docker/build/mysql/docker.cnf}:/etc/mysql/conf.d/docker.cnf
+      - ${MYSQL_SYSTEM_DIR-./mysql}:/var/lib/mysql
+      - ${MYSQL_LOG_DIR-./logs/mysql}:/var/log/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root} # (!)
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-ak_invoice}
+      - MYSQL_USER=${MYSQL_USER:-ak_invoice}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-ak_invoice123}
+    networks:
+      - ak_invoice
+
+networks:
+  ak_invoice:
+    name: ak_invoice
